@@ -1,0 +1,34 @@
+name:                passport-hs
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/githubuser/passport-hs#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Author name here
+maintainer:          example@example.com
+copyright:           2023 Author name here
+category:            Web
+build-type:          Simple
+cabal-version:       >=1.10
+extra-source-files:  README.md
+                     CHANGELOG.md
+
+library
+  exposed-modules:     Passport.Auth,
+                       Passport.Config
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5,
+                       hoauth2,
+                       rio,
+                       uri-bytestring,
+                       aeson
+  ghc-options:         -Wall
+                       -Wcompat
+                       -Widentities
+                       -Wincomplete-record-updates
+                       -Wincomplete-uni-patterns
+                       -Wmissing-export-lists
+                       -Wmissing-home-modules
+                       -Wpartial-fields
+                       -Wredundant-constraints
