@@ -4,7 +4,6 @@
 module Passport.Auth (loginH, callbackH, signOutH) where
 
 import Control.Monad.Trans.Except (ExceptT (ExceptT), withExceptT)
-import Data.Aeson (Value (String))
 import Network.HTTP.Conduit (newManager, tlsManagerSettings)
 import Network.HTTP.Types (status302, status500)
 import Network.OAuth.OAuth2
@@ -14,26 +13,19 @@ import Network.OAuth.OAuth2
     fetchAccessToken,
   )
 import Passport.Config (Auth0User (email), auth0, auth0UserInfoUri, authorizeUrl)
-import Passport.Utils (byteStringLazyToText, excepttToActionM, oauth2ErrorToText, paramValue, textToUri, uriToText)
+import Passport.Utils (byteStringLazyToText, excepttToActionM, generateToken, oauth2ErrorToText, paramValue, textToUri, uriToText)
 import RIO
   ( Text,
     liftIO,
     void,
   )
-import RIO.Map qualified as Map
 import RIO.Text (pack)
 import RIO.Text.Lazy qualified as TL
 import System.Environment (getEnv)
-import Web.JWT
-  ( ClaimsMap (ClaimsMap),
-    JWTClaimsSet (iss, unregisteredClaims),
-    encodeSigned,
-    hmacSecret,
-    stringOrURI,
-  )
 import Web.Scotty (ActionM, params, redirect, setHeader, status)
 import Web.Scotty.Cookie (deleteCookie, setSimpleCookie)
 
+-- | loginH is the function that starts the login process. It sends the request to the OAuth server to get the token
 loginH :: ActionM ()
 loginH = do
   oauthRedirectUri <- liftIO $ getEnv "OAUTH_REDIRECT_URI"
@@ -46,9 +38,14 @@ loginH = do
       setHeader "Location" $ uriToText u
       status status302
 
+-- | callbackH is the callback function called by the callback route.
+-- It takes one argument which is a callback function that takes the user's email
+-- as an argument and performs an IO operation. Usually it would be used to create a new row in a database.
 callbackH :: (Text -> IO a) -> ActionM ()
 callbackH authCallback = do
   oauthRedirectUri <- liftIO $ getEnv "OAUTH_REDIRECT_URI"
+  secretToken <- liftIO $ pack <$> getEnv "SECRET_TOKEN"
+  issuer <- liftIO $ pack <$> getEnv "ISSUER"
   pas <- params
   case textToUri $ pack oauthRedirectUri of
     Nothing -> status status500
@@ -75,20 +72,10 @@ callbackH authCallback = do
         _ <- liftIO $ authCallback (TL.toStrict $ email user)
         return (email user)
 
-      setSimpleCookie "auth-token" $ TL.toStrict $ generateToken userEmail
+      setSimpleCookie "auth-token" $ TL.toStrict $ generateToken secretToken issuer userEmail
       redirect "/"
 
-generateToken :: TL.Text -> TL.Text
-generateToken userEmail =
-  TL.fromStrict $
-    encodeSigned
-      (hmacSecret "secret-key")
-      mempty
-      mempty -- mempty returns a default JWTClaimsSet
-        { iss = stringOrURI "RecipeManager",
-          unregisteredClaims = ClaimsMap $ Map.fromList [("userEmail", String $ TL.toStrict userEmail)]
-        }
-
+-- | The signOutH function is implemented by the route that would be called to sign out
 signOutH :: ActionM ()
 signOutH = do
   deleteCookie "auth-token"

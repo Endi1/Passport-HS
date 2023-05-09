@@ -1,17 +1,20 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Passport.Utils (textToUri, byteStringLazyToText, excepttToActionM, oauth2ErrorToText, paramValue, uriToText) where
+module Passport.Utils (textToUri, byteStringLazyToText, excepttToActionM, oauth2ErrorToText, paramValue, uriToText, generateToken) where
 
 import Control.Exception (throw)
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
+import Data.Aeson (Value (String))
 import Data.ByteString.Lazy.Char8 qualified as BSL
 import Network.OAuth.OAuth2 (OAuth2Error)
 import Network.OAuth.OAuth2.TokenRequest (Errors)
 import Passport.Types (OAuthRedirectURI)
-import RIO
+import RIO (MonadIO (liftIO), Text, decodeUtf8', encodeUtf8)
+import RIO.Map qualified as Map
 import RIO.Text.Lazy qualified as TL
 import URI.ByteString (URI, parseURI, serializeURIRef', strictURIParserOptions)
+import Web.JWT (ClaimsMap (ClaimsMap), JWTClaimsSet (iss, unregisteredClaims), encodeSigned, hmacSecret, stringOrURI)
 import Web.Scotty (ActionM, Param, raise)
 
 textToUri :: Text -> Maybe OAuthRedirectURI
@@ -50,3 +53,14 @@ paramValue key params =
     val = snd <$> filter (hasParam key) params
     hasParam :: TL.Text -> Param -> Bool
     hasParam t = (== t) . fst
+
+generateToken :: Text -> Text -> TL.Text -> TL.Text
+generateToken secretKey issuer userEmail =
+  TL.fromStrict $
+    encodeSigned
+      (hmacSecret secretKey)
+      mempty
+      mempty -- mempty returns a default JWTClaimsSet
+        { iss = stringOrURI issuer,
+          unregisteredClaims = ClaimsMap $ Map.fromList [("userEmail", String $ TL.toStrict userEmail)]
+        }
