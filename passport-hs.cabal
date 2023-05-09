@@ -1,13 +1,13 @@
 name:                passport-hs
 version:             0.1.0.0
--- synopsis:
--- description:
-homepage:            https://github.com/githubuser/passport-hs#readme
+synopsis:            Google OAuth implementation
+description:         Google OAuth implementation for Scotty
+homepage:            https://github.com/Endi1/passport-hs#readme
 license:             BSD3
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2023 Author name here
+author:              Endi Sukaj
+maintainer:          endisukaj@gmail.com
+copyright:           2023 Endi Sukaj
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
@@ -15,7 +15,8 @@ extra-source-files:  README.md
                      CHANGELOG.md
 
 library
-  exposed-modules:     Passport.Auth,
+  exposed-modules:     Passport.Auth
+  other-modules:
                        Passport.Config,
                        Passport.Types,
                        Passport.Utils
