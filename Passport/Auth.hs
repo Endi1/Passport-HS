@@ -1,7 +1,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Passport.Auth () where
+module Passport.Auth (loginH, callbackH, signOutH) where
 
 import Control.Monad.Trans.Except (ExceptT (ExceptT), withExceptT)
 import Data.Aeson (Value (String))
