@@ -14,6 +14,7 @@ import Network.OAuth.OAuth2
   )
 import Passport.Config (Auth0User (email), auth0, auth0UserInfoUri, authorizeUrl)
 import Passport.Utils (byteStringLazyToText, excepttToActionM, generateToken, oauth2ErrorToText, paramValue, textToUri, uriToText)
+
 import RIO
   ( Text,
     liftIO,
