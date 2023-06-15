@@ -14,7 +14,6 @@ import Network.OAuth.OAuth2
   )
 import Passport.Config (Auth0User (email), auth0, auth0UserInfoUri, authorizeUrl)
 import Passport.Utils (byteStringLazyToText, excepttToActionM, generateToken, oauth2ErrorToText, paramValue, textToUri, uriToText)
-
 import RIO
   ( Text,
     liftIO,
@@ -24,7 +23,7 @@ import RIO.Text (pack)
 import RIO.Text.Lazy qualified as TL
 import System.Environment (getEnv)
 import Web.Scotty (ActionM, params, redirect, setHeader, status)
-import Web.Scotty.Cookie (deleteCookie, setSimpleCookie)
+import Web.Scotty.Cookie (deleteCookie)
 
 -- | loginH is the function that starts the login process. It sends the request to the OAuth server to get the token
 loginH :: ActionM ()
@@ -42,8 +41,8 @@ loginH = do
 -- | callbackH is the callback function called by the callback route.
 -- It takes one argument which is a callback function that takes the user's email
 -- as an argument and performs an IO operation. Usually it would be used to create a new row in a database.
-callbackH :: (Text -> IO a) -> ActionM ()
-callbackH authCallback = do
+callbackH :: (Text -> IO a) -> (Text -> ActionM ()) -> ActionM ()
+callbackH authCallback handler = do
   oauthRedirectUri <- liftIO $ getEnv "OAUTH_REDIRECT_URI"
   secretToken <- liftIO $ pack <$> getEnv "SECRET_TOKEN"
   issuer <- liftIO $ pack <$> getEnv "ISSUER"
@@ -73,8 +72,7 @@ callbackH authCallback = do
         _ <- liftIO $ authCallback (TL.toStrict $ email user)
         return (email user)
 
-      setSimpleCookie "auth-token" $ TL.toStrict $ generateToken secretToken issuer userEmail
-      redirect "/"
+      handler $ TL.toStrict $ generateToken secretToken issuer userEmail
 
 -- | The signOutH function is implemented by the route that would be called to sign out
 signOutH :: ActionM ()
